@@ -1,7 +1,7 @@
 import { ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { NodeKind } from '../types';
-
+import { Position } from '@xyflow/react';
 const getNodeStyle = (isDark: boolean, kind: NodeKind) => {
   const palette = {
     object: { lightBg: '#eef2ff', darkBg: '#312e81', lightBorder: '#6366f1', darkBorder: '#818cf8', lightText: '#1e293b', darkText: '#e0e7ff' },
@@ -34,8 +34,8 @@ export function FlowCanvas({ nodes, edges, isDark, colors }: {
           nodes={nodes.map(node => ({
             ...node,
             style: getNodeStyle(isDark, node.data.kind),
-            sourcePosition: 'right',
-            targetPosition: 'left',
+            sourcePosition: Position.Bottom,
+            targetPosition: Position.Top,
           }))}
           edges={edges}
           fitView

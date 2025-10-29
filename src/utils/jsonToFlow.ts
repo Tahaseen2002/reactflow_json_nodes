@@ -45,23 +45,23 @@ export function buildFlowFromJsonText(jsonText: string) {
   const rootLabel = (data !== null && typeof data === 'object') ? 'root' : `root: ${String(data)}`;
   const root = buildTree(data, 'root', rootLabel);
 
-  // 2) Assign positions with a horizontal layered layout
-  const xStep = 260; // horizontal spacing per depth
-  const yStep = 90;  // vertical spacing between leaves
-  let yCursor = 0;
+  // 2) Assign positions with a VERTICAL layered layout (top -> bottom)
+  const xStep = 200; // horizontal spacing between leaves
+  const yStep = 120; // vertical spacing per depth level
+  let xCursor = 0;
 
   const assignPositions = (node: TreeNode, depth: number): { x: number; y: number } => {
     if (node.children.length === 0) {
-      const pos = { x: depth * xStep, y: yCursor * yStep };
-      yCursor += 1;
+      const pos = { x: xCursor * xStep, y: depth * yStep };
+      xCursor += 1;
       (node as any).position = pos;
       return pos;
     }
-    // Position children first, then center parent between first and last child
+    // Position children first, then center parent between first and last child horizontally
     const childPositions = node.children.map((c) => assignPositions(c, depth + 1));
-    const firstY = childPositions[0].y;
-    const lastY = childPositions[childPositions.length - 1].y;
-    const pos = { x: depth * xStep, y: Math.round((firstY + lastY) / 2) };
+    const firstX = childPositions[0].x;
+    const lastX = childPositions[childPositions.length - 1].x;
+    const pos = { x: Math.round((firstX + lastX) / 2), y: depth * yStep };
     (node as any).position = pos;
     return pos;
   };
