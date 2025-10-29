@@ -1,18 +1,17 @@
 
 import { useEffect, useState,  useCallback } from 'react';
+import { applyNodeChanges, applyEdgeChanges, addEdge, NodeChange, EdgeChange } from '@xyflow/react';
+import { Header } from './components/Header';
+import { JsonInput } from './components/JsonInput';
+import { FlowCanvas } from './components/FlowCanvas';
+import { getThemeColors } from './utils/theme';
+import { buildFlowFromJsonText } from './utils/jsonToFlow';
 
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, NodeChange, EdgeChange } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { Sun } from 'lucide-react';
-import { Moon } from 'lucide-react';
-
-type Theme = 'light' | 'dark';
-
-const initialNodes = [
-  { id: 'n1', position: { x: 20, y: 20 }, data: { label: 'Node 1' } },
-  { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2' } },
+const initialNodes: Array<{ id: string; position: { x: number; y: number }; data: { label: string; kind?: 'primitive' | 'object' | 'array' } }> = [
+  { id: 'n1', position: { x: 20, y: 20 }, data: { label: 'Node 1', kind: 'primitive' } },
+  { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2', kind: 'primitive' } },
 ];
-const initialEdges = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
+const initialEdges: Array<{ id: string; source: string; target: string }> = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
 
 // Custom node component for theme-aware styling
 const CustomNode = ({ data, isDark }: { data: any; isDark: boolean }) => (
@@ -32,22 +31,56 @@ const CustomNode = ({ data, isDark }: { data: any; isDark: boolean }) => (
   </div>
 );
 
-// Default node styles for theme
-const getNodeStyle = (isDark: boolean) => ({
-  background: isDark ? '#374151' : '#f3f4f6',
-  border: `2px solid ${isDark ? '#4b5563' : '#d1d5db'}`,
-  color: isDark ? '#f9fafb' : '#111827',
-  borderRadius: '8px',
-  padding: '10px 15px',
-  fontSize: '14px',
-  fontWeight: '500',
-  boxShadow: isDark ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-});
+// Default node styles for theme by type
+type NodeKind = 'object' | 'array' | 'primitive';
+const getNodeStyle = (isDark: boolean, kind: NodeKind) => {
+  const palette = {
+    object: {
+      lightBg: '#eef2ff', // indigo-50
+      darkBg: '#312e81',  // indigo-900
+      lightBorder: '#6366f1', // indigo-500
+      darkBorder: '#818cf8',
+      lightText: '#1e293b',
+      darkText: '#e0e7ff',
+    },
+    array: {
+      lightBg: '#ecfdf5', // emerald-50
+      darkBg: '#064e3b',  // emerald-900
+      lightBorder: '#10b981',
+      darkBorder: '#34d399',
+      lightText: '#064e3b',
+      darkText: '#d1fae5',
+    },
+    primitive: {
+      lightBg: '#fff7ed', // orange-50
+      darkBg: '#7c2d12',  // orange-900
+      lightBorder: '#f59e0b',
+      darkBorder: '#fbbf24',
+      lightText: '#7c2d12',
+      darkText: '#fffbeb',
+    },
+  } as const;
+
+  const c = palette[kind];
+  return {
+    background: isDark ? c.darkBg : c.lightBg,
+    border: `2px solid ${isDark ? c.darkBorder : c.lightBorder}`,
+    color: isDark ? c.darkText : c.lightText,
+    borderRadius: '8px',
+    padding: '10px 12px',
+    fontSize: '13px',
+    fontWeight: '600',
+    boxShadow: isDark ? '0 4px 10px -2px rgba(0,0,0,0.45)' : '0 2px 8px rgba(0,0,0,0.08)',
+    whiteSpace: 'nowrap',
+  } as React.CSSProperties;
+};
 
 export default function App() {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
       const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [jsonText, setJsonText] = useState<string>('');
+  const [jsonError, setJsonError] = useState<string>('');
 
   useEffect(() => {
     const isDark = theme === 'dark';
@@ -57,22 +90,9 @@ export default function App() {
     document.body.style.color = foreground;
   }, [theme]);
 
-  const isDark = theme === 'dark';
-  const colors = {
-    background: isDark ? '#0f172a' : '#f8fafc',
-    foreground: isDark ? '#e2e8f0' : '#0f172a',
-    card: isDark ? '#111827' : '#ffffff',
-    border: isDark ? '#1f2937' : '#e5e7eb',
-    buttonBg: isDark ? '#334155' : '#0ea5e9',
-    buttonFg: isDark ? '#e2e8f0' : '#ffffff',
-    buttonBorder: isDark ? '#475569' : '#0284c7',
-    // ReactFlow specific colors
-    flowBackground: isDark ? '#0f172a' : '#ffffff',
-    flowNodeBg: isDark ? '#374151' : '#f3f4f6',
-    flowNodeBorder: isDark ? '#4b5563' : '#d1d5db',
-    flowNodeText: isDark ? '#f9fafb' : '#111827',
-    flowEdge: isDark ? '#94a3b8' : '#374151',
-  };
+  const themeColors = getThemeColors(theme);
+  const isDark = themeColors.isDark;
+  const colors = themeColors;
 
 
  
@@ -88,78 +108,31 @@ export default function App() {
     (params: any) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
     [],
   );
+
+  const generateGraphFromJson = useCallback(() => {
+    try {
+      const { nodes: builtNodes, edges: builtEdges } = buildFlowFromJsonText(jsonText);
+      setJsonError('');
+      setNodes(builtNodes as any);
+      setEdges(builtEdges as any);
+    } catch (err: any) {
+      setJsonError(err?.message || 'Invalid JSON');
+    }
+  }, [jsonText]);
   return (
     <>
-     <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: colors.card, borderBottom: `1px solid ${colors.border}` }}>
-       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', color: colors.foreground }}>
-         <div style={{ fontWeight: 600 }}>APIWiz</div>
-         <button
-           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-           onClick={() => setTheme(isDark ? 'light' : 'dark')}
-           style={{
-             display: 'inline-flex',
-             alignItems: 'center',
-             justifyContent: 'center',
-             width: 40,
-             height: 32,
-             borderRadius: 9999,
-             border: `1px solid ${colors.buttonBorder}`,
-             backgroundColor: colors.buttonBg,
-             color: colors.buttonFg,
-             cursor: 'pointer',
-           }}
-           title={isDark ? 'Light mode' : 'Dark mode'}
-         >
-           {isDark ? <Sun size={18} /> : <Moon size={18} />}
-         </button>
-       </div>
-     </div>
+     <Header theme={theme} onToggle={() => setTheme(isDark ? 'light' : 'dark')} colors={colors} />
      <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>
-   
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
-    <div style={{ flex: '1 1 320px', backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 }}>
-       <div style={{ width: '50vw', height: '50vh' }}>
-      <ReactFlow
-        nodes={nodes.map(node => ({
-          ...node,
-          style: getNodeStyle(isDark)
-        }))}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        fitView
-        style={{
-          backgroundColor: colors.flowBackground,
-        }}
-        defaultEdgeOptions={{
-          style: {
-            stroke: colors.flowEdge,
-            strokeWidth: 3,
-          },
-          markerEnd: {
-            type: 'arrowclosed',
-            color: colors.flowEdge,
-          }
-        }}
-      />
-    </div>
-    </div>
-    </div>
-    </div>
+        <FlowCanvas nodes={nodes as any} edges={edges as any} isDark={isDark} colors={colors as any} />
+      </div>
+     </div>
     <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>
    
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
        
-        <div style={{ flex: '1 1 320px', backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 }}>
-          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Card One</h2>
-          <p style={{ margin: 0 }}>Place your first section content here.</p>
-           
-        </div>
-        <div style={{ flex: '1 1 320px', backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 }}>
-          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Card Two</h2>
-          <p style={{ margin: 0 }}>Place your second section content here.</p>
-        </div>
+        <JsonInput value={jsonText} error={jsonError} onChange={setJsonText} onVisualize={generateGraphFromJson} colors={colors as any} />
+        
       </div>
 
       
@@ -167,63 +140,3 @@ export default function App() {
     </>
   );
 }
-
-
-// import { useCallback } from 'react'
-// import ReactFlow, { addEdge, Background, Controls, MiniMap, useEdgesState, useNodesState, Connection, Edge } from 'reactflow'
-// import 'reactflow/dist/style.css'
-
-// const initialNodes = [
-//   { id: '1', position: { x: 200, y: 100 }, data: { label: 'Node 1' } },
-//   { id: '2', position: { x: 500, y: 200 }, data: { label: 'Node 2' } },
-// ]
-
-// const initialEdges: Edge[] = []
-
-// export default function App() {
-//   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-//   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
-
-//   const onConnect = useCallback((connection: Connection) => {
-//     setEdges((eds) => addEdge(connection, eds))
-//   }, [setEdges])
-
-//   return (
-//     <div >
-//       <div className="h-[calc(100vh-4rem)]">
-//        <ReactFlow
-//           nodes={nodes}
-//           edges={edges}
-//           onNodesChange={onNodesChange}
-//           onEdgesChange={onEdgesChange}
-//           onConnect={onConnect}
-//           fitView
-//         >
-//           <MiniMap />
-//           <Controls />
-//           <Background gap={16} size={1} />
-//         </ReactFlow>
-//         </div>
-//       <div className="h-16 flex items-center justify-center border-b bg-white/80 backdrop-blur">
-//         <h1 className="text-xl font-semibold">APIWiz - React Flow + Tailwind</h1>
-        
-//       </div>
-//       <div className="h-[calc(100vh-4rem)]">
-//         <ReactFlow
-//           nodes={nodes}
-//           edges={edges}
-//           onNodesChange={onNodesChange}
-//           onEdgesChange={onEdgesChange}
-//           onConnect={onConnect}
-//           fitView
-//         >
-//           <MiniMap />
-//           <Controls />
-//           <Background gap={16} size={1} />
-//         </ReactFlow>
-//       </div>
-//     </div>
-//   )
-// }
-
-
