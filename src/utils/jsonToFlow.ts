@@ -28,13 +28,17 @@ export function buildFlowFromJsonText(jsonText: string) {
       if (Array.isArray(value)) {
         value.forEach((child, idx) => {
           const childPath = `${id}[${idx}]`;
-          const childLabel = (child !== null && typeof child === 'object') ? `[${idx}]` : `[${idx}]: ${String(child)}`;
+          const childLabel = (child !== null && typeof child === 'object')
+            ? (Array.isArray(child) ? 'Array' : 'Object')
+            : String(child);
           node.children.push(buildTree(child, childPath, childLabel));
         });
       } else {
         Object.entries(value).forEach(([k, v]) => {
           const childPath = `${id}.${k}`;
-          const childLabel = (v !== null && typeof v === 'object') ? k : `${k}: ${String(v)}`;
+          const childLabel = (v !== null && typeof v === 'object')
+            ? (Array.isArray(v) ? 'Array' : 'Object')
+            : String(v);
           node.children.push(buildTree(v, childPath, childLabel));
         });
       }
@@ -42,7 +46,9 @@ export function buildFlowFromJsonText(jsonText: string) {
     return node;
   };
 
-  const rootLabel = (data !== null && typeof data === 'object') ? 'root' : `root: ${String(data)}`;
+  const rootLabel = (data !== null && typeof data === 'object')
+    ? (Array.isArray(data) ? 'Array' : 'Object')
+    : String(data);
   const root = buildTree(data, 'root', rootLabel);
 
   // 2) Assign positions with a VERTICAL layered layout (top -> bottom)
