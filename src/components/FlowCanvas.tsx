@@ -22,7 +22,8 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) =
       padding: '10px 12px',
       fontSize: '13px',
       fontWeight: '600',
-      whiteSpace: 'nowrap',
+      // whiteSpace: 'nowrap',
+      wordBreak: 'break-word',
       boxShadow: '0 0 20px rgba(124, 58, 237, 0.6)',
       // transform: 'scale(1.1)',
       transition: 'all 0.3s ease',
@@ -36,7 +37,8 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) =
     padding: '10px 12px',
     fontSize: '13px',
     fontWeight: '600',
-    whiteSpace: 'nowrap',
+    // whiteSpace: 'nowrap',
+    wordBreak: 'break-word',
 
   } as React.CSSProperties;
 };
