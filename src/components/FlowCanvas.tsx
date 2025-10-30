@@ -20,7 +20,7 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) =
       fontWeight: '600',
       whiteSpace: 'nowrap',
       boxShadow: '0 0 20px rgba(124, 58, 237, 0.6)',
-      transform: 'scale(1.1)',
+      // transform: 'scale(1.1)',
       transition: 'all 0.3s ease',
     } as React.CSSProperties;
   }
