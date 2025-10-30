@@ -8,6 +8,8 @@ type TreeNode = {
   label: string;
   kind: NodeKind;
   children: TreeNode[];
+  path: string;
+  value: any;
 };
 
 export function buildFlowFromJsonText(jsonText: string) {
@@ -18,11 +20,11 @@ export function buildFlowFromJsonText(jsonText: string) {
     throw new Error(err?.message || 'Invalid JSON');
   }
 
-  // 1) Build a stable tree (objects keep property order, arrays keep index order)
+ 
   const buildTree = (value: any, path: string, label: string): TreeNode => {
     const id = path || 'root';
     const kind: NodeKind = value !== null && typeof value === 'object' ? (Array.isArray(value) ? 'array' : 'object') : 'primitive';
-    const node: TreeNode = { id, label, kind, children: [] };
+    const node: TreeNode = { id, label, kind, children: [], path, value };
 
     if (value !== null && typeof value === 'object') {
       if (Array.isArray(value)) {
@@ -51,7 +53,7 @@ export function buildFlowFromJsonText(jsonText: string) {
     : String(data);
   const root = buildTree(data, 'root', rootLabel);
 
-  // 2) Assign positions with a VERTICAL layered layout (top -> bottom)
+  
   const xStep = 200; // horizontal spacing between leaves
   const yStep = 120; // vertical spacing per depth level
   let xCursor = 0;
@@ -63,7 +65,6 @@ export function buildFlowFromJsonText(jsonText: string) {
       (node as any).position = pos;
       return pos;
     }
-    // Position children first, then center parent between first and last child horizontally
     const childPositions = node.children.map((c) => assignPositions(c, depth + 1));
     const firstX = childPositions[0].x;
     const lastX = childPositions[childPositions.length - 1].x;
@@ -75,11 +76,14 @@ export function buildFlowFromJsonText(jsonText: string) {
   assignPositions(root, 0);
 
   // 3) Flatten to nodes/edges
-  const builtNodes: BuiltNode[] = [];
-  const builtEdges: BuiltEdge[] = [];
+  // const builtNodes: BuiltNode[] = [];
+  // const builtEdges: BuiltEdge[] = [];
+   const builtNodes: any[] = [];
+  const builtEdges: any[] = [];
 
   const flatten = (node: TreeNode) => {
-    builtNodes.push({ id: node.id, position: (node as any).position, data: { label: node.label, kind: node.kind } });
+    builtNodes.push({ id: node.id, position: (node as any).position, data: { label: node.label, kind: node.kind,  path: node.path,
+        value: node.value } });
     node.children.forEach((child) => {
       builtEdges.push({ id: `${node.id}->${child.id}` , source: node.id, target: child.id, type: 'smoothstep' });
       flatten(child);

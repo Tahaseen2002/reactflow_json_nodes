@@ -1,17 +1,51 @@
 
-import { useEffect, useState,  useCallback } from 'react';
-import { applyNodeChanges, applyEdgeChanges, addEdge, NodeChange, EdgeChange } from '@xyflow/react';
+import { useEffect, useState,  useCallback, useRef } from 'react';
+import { applyNodeChanges, applyEdgeChanges, addEdge, NodeChange, EdgeChange, ReactFlowInstance, Connection } from '@xyflow/react';
 import { Header } from './components/Header';
 import { JsonInput } from './components/JsonInput';
 import { FlowCanvas } from './components/FlowCanvas';
 import { getThemeColors } from './utils/theme';
 import { buildFlowFromJsonText } from './utils/jsonToFlow';
+import { SearchBar } from './components/searchBar';
 
-const initialNodes: Array<{ id: string; position: { x: number; y: number }; data: { label: string; kind?: 'primitive' | 'object' | 'array' } }> = [
-  { id: 'n1', position: { x: 20, y: 20 }, data: { label: 'Node 1', kind: 'primitive' } },
-  { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2', kind: 'primitive' } },
+// const initialNodes: Array<{ id: string; position: { x: number; y: number }; data: { label: string; kind?: 'primitive' | 'object' | 'array' } }> = [
+//   { id: 'n1', position: { x: 20, y: 20 }, data: { label: 'Node 1', kind: 'primitive' } },
+//   { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2', kind: 'primitive' } },
+// ];
+// const initialEdges: Array<{ id: string; source: string; target: string }> = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
+
+
+const initialNodes = [
+  { id: 'n1', position: { x: 20, y: 20 }, data: { label: 'Node 1', kind: 'primitive' as NodeKind, path: 'n1' } },
+  { id: 'n2', position: { x: 0, y: 100 }, data: { label: 'Node 2', kind: 'primitive' as NodeKind, path: 'n2' } },
 ];
-const initialEdges: Array<{ id: string; source: string; target: string }> = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
+const initialEdges = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
+
+const defaultJson = `{
+  "user": {
+    "name": "John Doe",
+    "age": 30,
+    "email": "john@example.com",
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "country": "USA"
+    }
+  },
+  "items": [
+    {
+      "id": 1,
+      "name": "Item 1",
+      "price": 29.99
+    },
+    {
+      "id": 2,
+      "name": "Item 2",
+      "price": 49.99
+    }
+  ],
+  "active": true
+}`;
 
 // Custom node component for theme-aware styling
 const CustomNode = ({ data, isDark }: { data: any; isDark: boolean }) => (
@@ -63,7 +97,7 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind) => {
 
   const c = palette[kind];
   return {
-    background: isDark ? c.darkBg : c.lightBg,
+    backgroundColor: isDark ? c.darkBorder : c.lightBorder,
     border: `2px solid ${isDark ? c.darkBorder : c.lightBorder}`,
     color: isDark ? c.darkText : c.lightText,
     borderRadius: '8px',
@@ -77,11 +111,15 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind) => {
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-      const [nodes, setNodes] = useState(initialNodes);
+ const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
-  const [jsonText, setJsonText] = useState<string>('');
+  const [jsonText, setJsonText] = useState<string>(defaultJson);
   const [jsonError, setJsonError] = useState<string>('');
-
+const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResult, setSearchResult] = useState<string>('');
+  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
+  const reactFlowInstanceRef = useRef<any>(null)
+  
   useEffect(() => {
     const isDark = theme === 'dark';
     const background = isDark ? '#0f172a' : '#f8fafc';
@@ -95,18 +133,23 @@ export default function App() {
   const colors = themeColors;
 
 
- 
-  const onNodesChange = useCallback(
-    (changes: NodeChange<{ id: string; position: { x: number; y: number; }; data: { label: string; }; }>[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-    [],
-  );
+//  const onNodesChange = useCallback(
+//     (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+//     []
+//   );
+const onNodesChange = useCallback(
+  (changes: NodeChange[]) =>
+    setNodes((nds) => applyNodeChanges(changes, nds) as typeof nds),
+  []
+);
+
   const onEdgesChange = useCallback(
-    (changes: EdgeChange<{ id: string; source: string; target: string; }>[]) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-    [],
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    []
   );
   const onConnect = useCallback(
-    (params: any) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    [],
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    []
   );
 
   const generateGraphFromJson = useCallback(() => {
@@ -115,16 +158,76 @@ export default function App() {
       setJsonError('');
       setNodes(builtNodes as any);
       setEdges(builtEdges as any);
+       setSearchQuery('');
+      setSearchResult('');
+      setHighlightedNode(null);
     } catch (err: any) {
       setJsonError(err?.message || 'Invalid JSON');
     }
   }, [jsonText]);
+
+  const handleSearch = useCallback(() => {
+    if (!searchQuery.trim()) {
+      setSearchResult('');
+      setHighlightedNode(null);
+      return;
+    }
+
+    let pathToSearch = searchQuery.trim();
+    
+    if (pathToSearch.startsWith('$.')) {
+      pathToSearch = 'root.' + pathToSearch.substring(2);
+    } else if (pathToSearch === '$') {
+      pathToSearch = 'root';
+    } else if (!pathToSearch.startsWith('root')) {
+      pathToSearch = 'root.' + pathToSearch;
+    }
+
+    const matchedNode = nodes.find(node => {
+      const nodePath = node.data.path || node.id;
+      return nodePath === pathToSearch;
+    });
+
+    if (matchedNode) {
+      setHighlightedNode(matchedNode.id);
+      setSearchResult('Match found');
+      
+      if (reactFlowInstanceRef.current) {
+        reactFlowInstanceRef.current.setCenter(
+          matchedNode.position.x,
+          matchedNode.position.y,
+          { zoom: 1.2, duration: 800 }
+        );
+      }
+    } else {
+      setHighlightedNode(null);
+      setSearchResult('No match found');
+    }
+  }, [searchQuery, nodes]);
+
+  const onReactFlowInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstanceRef.current = instance;
+  }, []);
+
+  
   return (
     <>
      <Header theme={theme} onToggle={() => setTheme(isDark ? 'light' : 'dark')} colors={colors} />
      <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>
+      <SearchBar 
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSearch={handleSearch}
+          result={searchResult}
+          colors={colors}
+        />
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
-        <FlowCanvas nodes={nodes as any} edges={edges as any} isDark={isDark} colors={colors as any} />
+        <FlowCanvas nodes={nodes as any} edges={edges as any} isDark={isDark} colors={colors as any} highlightedNode={highlightedNode}
+            onInit={onReactFlowInit}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+ />
       </div>
      </div>
     <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>

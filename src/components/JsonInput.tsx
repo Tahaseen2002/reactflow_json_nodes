@@ -11,7 +11,7 @@ export function JsonInput({ value, error, onChange, onVisualize, colors }: {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={'{"name":"API","items":[{"id":1,"label":"Node A"},{"id":2,"label":"Node B"}],"config":{"retry":3,"enabled":true}}'}
+        placeholder={'{\n  "user": {\n    "name": "John Doe",\n    "age": 30,\n    "email": "john@example.com",\n    "address": {\n      "street": "123 Main St",\n      "city": "New York",\n      "country": "USA"\n    }\n  },\n  "items": [\n    {\n      "id": 1,\n      "name": "Item 1",\n      "price": 29.99\n    },\n    {\n      "id": 2,\n      "name": "Item 2",\n      "price": 49.99\n    }\n  ],\n  "active": true\n}'}
         style={{
           width: '100%',
           minHeight: 140,
@@ -40,7 +40,7 @@ export function JsonInput({ value, error, onChange, onVisualize, colors }: {
             cursor: 'pointer',
           }}
         >
-          Visualize
+          Generate Tree
         </button>
       </div>
     </div>
