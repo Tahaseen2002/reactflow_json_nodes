@@ -36,7 +36,7 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) =
   } as React.CSSProperties;
 };
 
-export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onInit, onNodesChange, onEdgesChange, onConnect  }: {
+export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onInit, onNodesChange, onEdgesChange, onConnect , onNodeClick }: {
   nodes: Array<{ id: string; position: { x: number; y: number }; data: { label: string; kind: NodeKind; path?: string; value?: any } }>;
   edges: Array<{ id: string; source: string; target: string }>;
   isDark: boolean;
@@ -46,6 +46,7 @@ export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onIn
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
+  onNodeClick: (event: React.MouseEvent, node: any) => void;
 }) {
   return (
     <div style={{ flex: '1 1 320px', backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16, width: '100%' }}>
@@ -56,12 +57,14 @@ export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onIn
             style: getNodeStyle(isDark, node.data.kind, node.id === highlightedNode),
             sourcePosition: Position.Bottom,
             targetPosition: Position.Top,
+            draggable: false,
           }))}
           edges={edges}
            onInit={onInit}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={onNodeClick}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           style={{ backgroundColor: colors.flowBackground }}

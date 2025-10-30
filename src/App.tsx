@@ -118,6 +118,7 @@ export default function App() {
 const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResult, setSearchResult] = useState<string>('');
   const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string>('');
   const reactFlowInstanceRef = useRef<any>(null)
   
   useEffect(() => {
@@ -209,10 +210,33 @@ const onNodesChange = useCallback(
     reactFlowInstanceRef.current = instance;
   }, []);
 
-  
+  const handleNodeClick = useCallback((event: React.MouseEvent, node: any) => {
+    if (node.data && node.data.path) {
+      let nodePath = node.data.path as string;
+      let jsonPath = '$';
+      
+      if (nodePath === 'root') {
+        jsonPath = '$';
+      } else if (nodePath.startsWith('root.')) {
+        // Convert 'root.user.name' to '$.user.name'
+        jsonPath = '$.' + nodePath.substring(5); 
+      }
+      
+      navigator.clipboard.writeText(jsonPath).then(() => {
+        setCopyStatus(`Copied: ${jsonPath}`);
+        // Clear status after 2 seconds
+        setTimeout(() => setCopyStatus(''), 2000);
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+        setCopyStatus('Failed to copy.');
+        setTimeout(() => setCopyStatus(''), 2000);
+      });
+    }
+  }, []);
   return (
     <>
      <Header theme={theme} onToggle={() => setTheme(isDark ? 'light' : 'dark')} colors={colors} />
+     
      <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>
       <SearchBar 
           value={searchQuery}
@@ -221,25 +245,59 @@ const onNodesChange = useCallback(
           result={searchResult}
           colors={colors}
         />
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
-        <FlowCanvas nodes={nodes as any} edges={edges as any} isDark={isDark} colors={colors as any} highlightedNode={highlightedNode}
-            onInit={onReactFlowInit}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
- />
-      </div>
-     </div>
-    <div style={{  backgroundColor: colors.background, color: colors.foreground, boxSizing: 'border-box', padding: 16 }}>
-   
+        
+      {/* Container for the 1/4 and 3/4 layout, using flex-wrap for responsiveness */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
        
-        <JsonInput value={jsonText} error={jsonError} onChange={setJsonText} onVisualize={generateGraphFromJson} colors={colors as any} />
+        {/* JsonInput Wrapper (1/4 width) */}
+        <div style={{ 
+            flex: '1 1 320px', // Min width of 320px, takes 1 part of remaining space
+            minWidth: 320, 
+        }}>
+            <JsonInput value={jsonText} error={jsonError} onChange={setJsonText} onVisualize={generateGraphFromJson} colors={colors as any} />
+        </div>
+
+        {/* FlowCanvas Wrapper (3/4 width) */}
+        <div style={{ 
+            flex: '3 1 0', // Takes 3 parts of the remaining space, allowing 1:3 ratio
+            minWidth: '60%', // Ensures FlowCanvas doesn't get too small before stacking
+        }}>
+            <FlowCanvas 
+                nodes={nodes as any} 
+                edges={edges as any} 
+                isDark={isDark} 
+                colors={colors as any} 
+                highlightedNode={highlightedNode}
+                onInit={onReactFlowInit}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={handleNodeClick}
+            />
+        </div>
         
       </div>
 
       
     </div>
+    {copyStatus && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          backgroundColor: '#10b981', 
+          color: 'white',
+          padding: '10px 15px',
+          borderRadius: 8,
+          zIndex: 1000,
+          fontSize: 14,
+          fontWeight: 600,
+          boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+          opacity: 0.95,
+        }}>
+          {copyStatus}
+        </div>
+      )}
     </>
   );
 }
