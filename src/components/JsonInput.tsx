@@ -14,7 +14,7 @@ export function JsonInput({ value, error, onChange, onVisualize, colors }: {
         placeholder={'{\n  "user": {\n    "name": "John Doe",\n    "age": 30,\n    "email": "john@example.com",\n    "address": {\n      "street": "123 Main St",\n      "city": "New York",\n      "country": "USA"\n    }\n  },\n  "items": [\n    {\n      "id": 1,\n      "name": "Item 1",\n      "price": 29.99\n    },\n    {\n      "id": 2,\n      "name": "Item 2",\n      "price": 49.99\n    }\n  ],\n  "active": true\n}'}
         style={{
           width: '100%',
-          minHeight: 140,
+          minHeight: 340,
           resize: 'vertical',
           backgroundColor: colors.background,
           color: colors.foreground,
@@ -36,7 +36,7 @@ export function JsonInput({ value, error, onChange, onVisualize, colors }: {
             backgroundColor: colors.buttonBg,
             color: colors.buttonFg,
             border: `1px solid ${colors.buttonBorder}`,
-            borderRadius: 8,
+            borderRadius: 4,
             cursor: 'pointer',
           }}
         >

@@ -11,7 +11,7 @@ export const getThemeColors = (theme: Theme) => {
     buttonBg: isDark ? '#334155' : '#0ea5e9',
     buttonFg: isDark ? '#e2e8f0' : '#ffffff',
     buttonBorder: isDark ? '#475569' : '#0284c7',
-    flowBackground: isDark ? '#475569' : '#0f172a',
+    flowBackground: isDark ? '#f7f7f8' : '#0f172a',
     flowEdge: isDark ? '#94a3b8' : '#374151',
   } as const;
 };

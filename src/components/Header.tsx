@@ -6,7 +6,7 @@ export function Header({ theme, onToggle, colors }: { theme: Theme; onToggle: ()
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: colors.card, borderBottom: `1px solid ${colors.border}` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', color: colors.foreground }}>
-        <div style={{ fontWeight: 600 }}>APIWiz</div>
+        <div style={{ fontWeight: 600 }}>JSON Tree Visualizer</div>
         <button
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           onClick={onToggle}
@@ -16,7 +16,7 @@ export function Header({ theme, onToggle, colors }: { theme: Theme; onToggle: ()
             justifyContent: 'center',
             width: 40,
             height: 32,
-            borderRadius: 9999,
+            borderRadius: 999,
             border: `1px solid ${colors.buttonBorder}`,
             backgroundColor: colors.buttonBg,
             color: colors.buttonFg,

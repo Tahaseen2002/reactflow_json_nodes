@@ -1,9 +1,11 @@
+import { RotateCw } from 'lucide-react';
 import { Search } from 'lucide-react';
 
-export function SearchBar({ value, onChange, onSearch, result, colors }: {
+export function SearchBar({ value, onChange, onSearch, onReset, result, colors }: {
   value: string;
   onChange: (v: string) => void;
   onSearch: () => void;
+   onReset: () => void;
   result: string;
   colors: { background: string; foreground: string; border: string; buttonBg: string; buttonFg: string; buttonBorder: string; card: string; };
 }) {
@@ -14,7 +16,8 @@ export function SearchBar({ value, onChange, onSearch, result, colors }: {
   };
 
   return (
-    <div style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 , marginBottom: "10px"}}>
+    //style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 , marginBottom: "10px"}}
+    <div >
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <input
@@ -29,7 +32,7 @@ export function SearchBar({ value, onChange, onSearch, result, colors }: {
               backgroundColor: colors.background,
               color: colors.foreground,
               border: `1px solid ${colors.border}`,
-              borderRadius: 8,
+              borderRadius: 4,
               fontSize: 14,
               outline: 'none',
             }}
@@ -53,6 +56,26 @@ export function SearchBar({ value, onChange, onSearch, result, colors }: {
         >
           Search
         </button>
+         <button
+          onClick={onReset}
+          aria-label="Reset Search"
+          title="Reset Search"
+          style={{
+            padding: '10px 8px',
+            backgroundColor: colors.buttonBg, 
+            color: colors.buttonFg,
+            border: `1px solid ${colors.buttonBorder}`,
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <RotateCw size={23} />
+        </button>
+
       </div>
       {result && (
         <div style={{ 

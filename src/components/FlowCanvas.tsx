@@ -1,7 +1,11 @@
-import { Background, Connection, Controls, EdgeChange, NodeChange, ReactFlow, ReactFlowInstance } from '@xyflow/react';
+import { Background, Connection, Controls, EdgeChange, NodeChange, ReactFlow, } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { NodeKind } from '../types';
 import { Position } from '@xyflow/react';
+import { useCallback, useRef, useState } from 'react';
+import { SearchBar } from './searchBar';
+import { Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
 const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) => {
   const palette = {
     object: { lightBg: '#eef2ff', darkBg: '#312e81', lightBorder: '#6366f1', darkBorder: '#818cf8', lightText: '#1e293b', darkText: '#e0e7ff' },
@@ -33,24 +37,146 @@ const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) =
     fontSize: '13px',
     fontWeight: '600',
     whiteSpace: 'nowrap',
+
   } as React.CSSProperties;
 };
 
-export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onInit, onNodesChange, onEdgesChange, onConnect , onNodeClick }: {
+export function FlowCanvas({ nodes, edges, isDark, colors, onInit, onNodesChange, onEdgesChange, onConnect, onNodeClick }: {
   nodes: Array<{ id: string; position: { x: number; y: number }; data: { label: string; kind: NodeKind; path?: string; value?: any } }>;
   edges: Array<{ id: string; source: string; target: string }>;
   isDark: boolean;
-  colors: { flowBackground: string; flowEdge: string; card: string; border: string };
-   highlightedNode: string | null;
+  colors: {
+    flowBackground: string;
+    flowEdge: string;
+    card: string;
+    border: string;
+    background: string;
+    foreground: string;
+    buttonBg: string;
+    buttonFg: string;
+    buttonBorder: string;
+  };
+  // colors: { flowBackground: string; flowEdge: string; card: string; border: string };
+  // highlightedNode: string | null;
   onInit: (instance: any) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   onNodeClick: (event: React.MouseEvent, node: any) => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResult, setSearchResult] = useState<string>('');
+  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
+  const reactFlowInstanceRef = useRef<any>(null)
+
+  const onReactFlowInit = useCallback((instance: any) => {
+    reactFlowInstanceRef.current = instance; // Set local ref for camera movement
+    onInit(instance); // Call App.tsx's onInit for external purposes
+  }, [onInit]);
+  const handleSearch = useCallback(() => {
+    if (!searchQuery.trim()) {
+      setSearchResult('');
+      setHighlightedNode(null);
+      return;
+    }
+
+    let pathToSearch = searchQuery.trim();
+
+    if (pathToSearch.startsWith('$.')) {
+      pathToSearch = 'root.' + pathToSearch.substring(2);
+    } else if (pathToSearch === '$') {
+      pathToSearch = 'root';
+    } else if (!pathToSearch.startsWith('root')) {
+      pathToSearch = 'root.' + pathToSearch;
+    }
+
+    const matchedNode = nodes.find(node => {
+      const nodePath = node.data.path || node.id;
+      return nodePath === pathToSearch;
+    });
+
+    if (matchedNode) {
+      setHighlightedNode(matchedNode.id);
+      setSearchResult('Match found');
+
+      if (reactFlowInstanceRef.current) {
+        reactFlowInstanceRef.current.setCenter(
+          matchedNode.position.x,
+          matchedNode.position.y,
+          { zoom: 1.2, duration: 800 }
+        );
+      }
+    } else {
+      setHighlightedNode(null);
+      setSearchResult('No match found');
+    }
+  }, [searchQuery, nodes]);
+
+const handleReset = useCallback(() => {
+    // 1. Clear the search input
+    setSearchQuery('');
+    // 2. Clear the result message
+    setSearchResult('');
+    // 3. Remove the node highlight
+    setHighlightedNode(null);
+    
+    // 4. Reset the flow view to fit all nodes (optional but good practice)
+    if (reactFlowInstanceRef.current) {
+      reactFlowInstanceRef.current.fitView({ padding: 0.2, duration: 300 });
+    }
+  }, []);
+
+ const handleDownload = useCallback(() => {
+    const element = document.querySelector('.react-flow') as HTMLElement;
+    if (element) {
+      toPng(element, {
+        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+      })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = 'json-tree.png';
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          console.error('Failed to download image:', err);
+        });
+    }
+  }, [isDark]);
+
+  
   return (
-    <div style={{ flex: '1 1 320px', backgroundColor: colors.card, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16, width: '100%' }}>
+    <div style={{
+      backgroundColor: colors.card,
+      border: `1px solid ${colors.border}`,
+      borderRadius: 12,
+      padding: 16,
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+
+
+
+      <SearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        result={searchResult}
+        colors={colors}
+      />
+
+      {/* Separator Line */}
+      <div style={{ borderTop: `1px solid ${colors.border}`, margin: '16px 0' }}></div>
+
+      {/* ReactFlow Canvas Container */}
       <div style={{ width: '100%', height: 'clamp(280px, 65vh, 85vh)' }}>
+
+       
+        
+
         <ReactFlow
           nodes={nodes.map(node => ({
             ...node,
@@ -60,13 +186,13 @@ export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onIn
             draggable: false,
           }))}
           edges={edges}
-           onInit={onInit}
+          onInit={onReactFlowInit}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
+          // fitView
+          // fitViewOptions={{ padding: 0.2 }}
           style={{ backgroundColor: colors.flowBackground }}
           defaultEdgeOptions={{
             type: 'smoothstep',
@@ -74,18 +200,40 @@ export function FlowCanvas({ nodes, edges, isDark, colors, highlightedNode, onIn
             markerEnd: { type: 'arrowclosed', color: colors.flowEdge },
           }}
         >
-           <Controls 
-            style={{ 
+          <Controls
+            style={{
               backgroundColor: colors.card,
               border: `1px solid ${colors.border}`,
               borderRadius: 8,
             }}
           />
-          <Background 
-            color={isDark ? '#1e293b' : '#e2e8f0'} 
-            gap={16} 
+          <Background
+            color={isDark ? '#1e293b' : '#e2e8f0'}
+            gap={16}
             size={1}
           />
+           <button
+          onClick={handleDownload}
+          title="Download Flowchart as PNG"
+         style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 4, // Ensure it's above the flow controls if they appear below it
+            padding: '8px 12px',
+            backgroundColor: colors.buttonBg,
+            color: colors.buttonFg,
+            border: `1px solid ${colors.buttonBorder}`,
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+        >
+          <Download size={18} />
+        </button>
         </ReactFlow>
       </div>
     </div>
