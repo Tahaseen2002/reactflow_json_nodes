@@ -112,21 +112,21 @@ export function FlowCanvas({ nodes, edges, isDark, colors, onInit, onNodesChange
     }
   }, [searchQuery, nodes]);
 
-const handleReset = useCallback(() => {
+  const handleReset = useCallback(() => {
     // 1. Clear the search input
     setSearchQuery('');
     // 2. Clear the result message
     setSearchResult('');
     // 3. Remove the node highlight
     setHighlightedNode(null);
-    
+
     // 4. Reset the flow view to fit all nodes (optional but good practice)
     if (reactFlowInstanceRef.current) {
       reactFlowInstanceRef.current.fitView({ padding: 0.2, duration: 300 });
     }
   }, []);
 
- const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(() => {
     const element = document.querySelector('.react-flow') as HTMLElement;
     if (element) {
       toPng(element, {
@@ -146,7 +146,7 @@ const handleReset = useCallback(() => {
     }
   }, [isDark]);
 
-  
+
   return (
     <div style={{
       backgroundColor: colors.card,
@@ -174,8 +174,8 @@ const handleReset = useCallback(() => {
       {/* ReactFlow Canvas Container */}
       <div style={{ width: '100%', height: 'clamp(280px, 65vh, 85vh)' }}>
 
-       
-        
+
+
 
         <ReactFlow
           nodes={nodes.map(node => ({
@@ -205,35 +205,36 @@ const handleReset = useCallback(() => {
               backgroundColor: colors.card,
               border: `1px solid ${colors.border}`,
               borderRadius: 8,
+              color: isDark ? '#1f2937' : colors.foreground,
             }}
           />
           <Background
-            color={isDark ? '#1e293b' : '#e2e8f0'}
+            color={isDark ? '#1f2937' : colors.foreground}
             gap={16}
             size={1}
           />
-           <button
-          onClick={handleDownload}
-          title="Download Flowchart as PNG"
-         style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 4, // Ensure it's above the flow controls if they appear below it
-            padding: '8px 12px',
-            backgroundColor: colors.buttonBg,
-            color: colors.buttonFg,
-            border: `1px solid ${colors.buttonBorder}`,
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-        >
-          <Download size={18} />
-        </button>
+          <button
+            onClick={handleDownload}
+            title="Download Flowchart as PNG"
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 4, // Ensure it's above the flow controls if they appear below it
+              padding: '8px 12px',
+              backgroundColor: colors.buttonBg,
+              color: colors.buttonFg,
+              border: `1px solid ${colors.buttonBorder}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <Download size={18} />
+          </button>
         </ReactFlow>
       </div>
     </div>
