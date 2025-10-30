@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/global.d.ts","./src/main.tsx","./src/components/flowcanvas.tsx","./src/components/header.tsx","./src/components/jsoninput.tsx","./src/components/searchbar.tsx","./src/types/index.ts","./src/types/lucide-react.d.ts","./src/utils/jsontoflow.ts","./src/utils/theme.ts"],"version":"5.9.3"}
