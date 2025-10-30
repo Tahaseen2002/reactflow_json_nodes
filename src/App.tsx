@@ -111,44 +111,44 @@ export default function App() {
     }
   }, [jsonText]);
 
-  const handleSearch = useCallback(() => {
-    if (!searchQuery.trim()) {
-      setSearchResult('');
-      setHighlightedNode(null);
-      return;
-    }
+  // const handleSearch = useCallback(() => {
+  //   if (!searchQuery.trim()) {
+  //     setSearchResult('');
+  //     setHighlightedNode(null);
+  //     return;
+  //   }
 
-    let pathToSearch = searchQuery.trim();
+  //   let pathToSearch = searchQuery.trim();
 
-    if (pathToSearch.startsWith('$.')) {
-      pathToSearch = 'root.' + pathToSearch.substring(2);
-    } else if (pathToSearch === '$') {
-      pathToSearch = 'root';
-    } else if (!pathToSearch.startsWith('root')) {
-      pathToSearch = 'root.' + pathToSearch;
-    }
+  //   if (pathToSearch.startsWith('$.')) {
+  //     pathToSearch = 'root.' + pathToSearch.substring(2);
+  //   } else if (pathToSearch === '$') {
+  //     pathToSearch = 'root';
+  //   } else if (!pathToSearch.startsWith('root')) {
+  //     pathToSearch = 'root.' + pathToSearch;
+  //   }
 
-    const matchedNode = nodes.find(node => {
-      const nodePath = node.data.path || node.id;
-      return nodePath === pathToSearch;
-    });
+  //   const matchedNode = nodes.find(node => {
+  //     const nodePath = node.data.path || node.id;
+  //     return nodePath === pathToSearch;
+  //   });
 
-    if (matchedNode) {
-      setHighlightedNode(matchedNode.id);
-      setSearchResult('Match found');
+  //   if (matchedNode) {
+  //     setHighlightedNode(matchedNode.id);
+  //     setSearchResult('Match found');
 
-      if (reactFlowInstanceRef.current) {
-        reactFlowInstanceRef.current.setCenter(
-          matchedNode.position.x,
-          matchedNode.position.y,
-          { zoom: 1.2, duration: 800 }
-        );
-      }
-    } else {
-      setHighlightedNode(null);
-      setSearchResult('No match found');
-    }
-  }, [searchQuery, nodes]);
+  //     if (reactFlowInstanceRef.current) {
+  //       reactFlowInstanceRef.current.setCenter(
+  //         matchedNode.position.x,
+  //         matchedNode.position.y,
+  //         { zoom: 1.2, duration: 800 }
+  //       );
+  //     }
+  //   } else {
+  //     setHighlightedNode(null);
+  //     setSearchResult('No match found');
+  //   }
+  // }, [searchQuery, nodes]);
 
   const onReactFlowInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstanceRef.current = instance;
