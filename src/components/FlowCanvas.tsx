@@ -178,13 +178,62 @@ export function FlowCanvas({ nodes, edges, isDark, colors, onInit, onNodesChange
 
 
         <ReactFlow
-          nodes={nodes.map(node => ({
-            ...node,
-            style: getNodeStyle(isDark, node.data.kind, node.id === highlightedNode),
-            sourcePosition: Position.Bottom,
-            targetPosition: Position.Top,
-            draggable: false,
-          }))}
+          nodes={nodes.map(node => {
+            // 1. Determine the path segment (key or index)
+            const pathSegments = node.data.path ? node.data.path.split('.') : [node.id];
+            let keyOrIndex = pathSegments[pathSegments.length - 1];
+
+            // For the root node, use a special label
+            if (keyOrIndex === 'root') {
+              keyOrIndex = 'JSON Root';
+            }
+
+            // 2. Determine the display value based on the node kind
+            let displayLabel = '';
+            if (node.data.kind === 'primitive') {
+              // For primitives, show key: value
+              const value = String(node.data.value);
+              displayLabel = `${keyOrIndex}: ${value.length > 30 ? value.substring(0, 27) + '...' : value}`;
+            } else if (node.data.kind === 'object') {
+              // For objects, just show the key
+              displayLabel = `${keyOrIndex} `;
+            } else if (node.data.kind === 'array') {
+              // For arrays, show the key and type
+              displayLabel = `${keyOrIndex} `;
+            } else {
+              displayLabel = node.data.label; // Fallback
+            }
+
+            // Check if it's an array index and strip 'items[1]' -> '1'
+            if (node.data.path && node.data.path.match(/\[\d+\]$/)) {
+              const indexMatch = keyOrIndex.match(/\[(\d+)\]$/);
+              if (indexMatch) {
+                const index = indexMatch[1];
+                if (node.data.kind === 'primitive') {
+                  const value = String(node.data.value);
+                  displayLabel = `[${index}]: ${value.length > 30 ? value.substring(0, 27) + '...' : value}`;
+                } else if (node.data.kind === 'object') {
+                  displayLabel = `[${index}] `;
+                } else if (node.data.kind === 'array') {
+                  displayLabel = `[${index}] (Array)`;
+                }
+              }
+            }
+
+
+            return {
+              ...node,
+              // **Use the dynamically generated label here**
+              data: {
+                ...node.data,
+                label: displayLabel,
+              },
+              style: getNodeStyle(isDark, node.data.kind, node.id === highlightedNode),
+              sourcePosition: Position.Bottom,
+              targetPosition: Position.Top,
+              draggable: false,
+            }
+          })}
           edges={edges}
           onInit={onReactFlowInit}
           onNodesChange={onNodesChange}
