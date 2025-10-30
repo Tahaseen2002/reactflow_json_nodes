@@ -8,9 +8,9 @@ import { Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 const getNodeStyle = (isDark: boolean, kind: NodeKind, isHighlighted: boolean) => {
   const palette = {
-    object: { lightBg: '#eef2ff', darkBg: '#312e81', lightBorder: '#6366f1', darkBorder: '#818cf8', lightText: '#1e293b', darkText: '#e0e7ff' },
-    array: { lightBg: '#ecfdf5', darkBg: '#064e3b', lightBorder: '#10b981', darkBorder: '#34d399', lightText: '#064e3b', darkText: '#d1fae5' },
-    primitive: { lightBg: '#fff7ed', darkBg: '#7c2d12', lightBorder: '#f59e0b', darkBorder: '#fbbf24', lightText: '#7c2d12', darkText: '#fffbeb' },
+    object: { lightBg: '#eef2ff', darkBg: '#312e81', lightBorder: '#6366f1', darkBorder: '#818cf8', lightText: '#ffffff', darkText: '#e0e7ff' },
+    array: { lightBg: '#ecfdf5', darkBg: '#064e3b', lightBorder: '#10b981', darkBorder: '#34d399', lightText: '#ffffff', darkText: '#d1fae5' },
+    primitive: { lightBg: '#fff7ed', darkBg: '#7c2d12', lightBorder: '#f59e0b', darkBorder: '#fbbf24', lightText: '#ffffff', darkText: '#fffbeb' },
   } as const;
   const c = palette[kind];
   if (isHighlighted) {
